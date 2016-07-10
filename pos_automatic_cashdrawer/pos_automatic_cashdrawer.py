@@ -23,17 +23,12 @@
 from openerp import models, fields
 
 
-class AccountJournal(models.Model):
-    _inherit = 'account.journal'
-
-    payment_mode = fields.Selection(
-        (('card', 'Card'), ('check', 'Check')), 'Payment mode',
-        help="Select the payment mode sent to the payment terminal")
-
-
 class PosConfig(models.Model):
     _inherit = 'pos.config'
 
-    iface_payment_terminal = fields.Boolean(
-        'Payment Terminal',
-        help="A payment terminal is available on the Proxy")
+    iface_automatic_cashdrawer = fields.Boolean(
+        'Automatic cashdrawer',
+        help="An automatic cashdrawer is available on the Proxy")
+
+    iface_automatic_cashdrawer_ip_address = fields.Char('Automatic cashdrawer IP address')
+    iface_automatic_cashdrawer_tcp_port = fields.Char('Automatic cashdrawer TCP port') #WARNING : set a port bigger than 1024 to allow a non-root user to listen on it

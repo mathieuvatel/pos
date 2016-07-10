@@ -69,7 +69,7 @@ class cashlogyAutomaticCashdrawerDriver(Thread):
             try:
                 self.socket.send(msg)
                 BUFFER_SIZE = 1024
-           logger.debug(self.socket.recv(BUFFER_SIZE))
+                logger.debug(self.socket.recv(BUFFER_SIZE))
             except Exception, e:
                 logger.error('Impossible to send to cashdrawer: %s' % str(e))
 
@@ -80,7 +80,7 @@ class cashlogyAutomaticCashdrawerDriver(Thread):
         assert isinstance(connaction_info_dict, dict), \
             'connection_info_dict should be a dict'
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((connection_info_dict['ip_adress'], connection_info_dict['tcp_port']))
+        self.socket.connect((connection_info_dict['ip_address'], connection_info_dict['tcp_port']))
         answer = self.send_to_cashdrawer("#I#")
         return answer
 
@@ -123,7 +123,7 @@ class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
     @http.route(
         '/hw_proxy/automatic_cashdrawer_connection_init',
         type='json', auth='none', cors='*')
-    def automatic_cashdrawer_connection_init(self, payment_info):
+    def automatic_cashdrawer_connection_init(self, connection_info):
         logger.debug(
             'Cashlogy: Call automatic_cashdrawer_connexion_init with '
             'connection_info=%s', connection_info)
