@@ -30,18 +30,28 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
             }
 
             var data = {'amount' : line.get_amount()}
-            //console.log(JSON.stringify(data));
+            console.log(JSON.stringify(data));
             this.message('automatic_cashdrawer_transaction_start', {'payment_info' : JSON.stringify(data)});
+            //TODO : thisfucntion shoul check the real amount received, and correct it / handle warnings and errors sent from the cashdrawer
         },
         automatic_cashdrawer_connection_init: function(){
+            //TODO : call this function on POS loading
+            //TODO : only managers should  be able to see/clic this button
             var data = {'ip_addres' : this.pos.config.iface_cashdrawer_ip_address, 'tcp_port' : this.pos.config.iface_cashdrawer_tcp_port}
+            console.log(JSON.stringify(data));
             this.message('automatic_cashdrawer_connection_init', {'payment_info' : JSON.stringify(data)});
         },
         automatic_cashdrawer_connection_exit: function(){
-            this.message('automatic_cashdrawer_connection_init', null);
+            //TODO : call this function on POS exit
+            //TODO : only managers should  be able to see/clic this button
+            var data = {'exit' : 'null'}
+            console.log(JSON.stringify(data));
+            this.message('automatic_cashdrawer_connection_init');
         },
         automatic_cashdrawer_connection_display_backoffice: function(){
-            var data = {'null' : 'null'}
+            //TODO : only managers should  be able to see/clic this button
+            var data = {'bo' : 'null'}
+            console.log(JSON.stringify(data));
             this.message('automatic_cashdrawer_display_backoffice', {'backoffice_info' : JSON.stringify(data)});
         },
     });

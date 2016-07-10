@@ -25,7 +25,6 @@
 from serial import Serial
 import curses.ascii
 import time
-import pycountry
 
 
 DEVICE = '/dev/ttyACM0'

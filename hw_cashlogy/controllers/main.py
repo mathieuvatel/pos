@@ -28,7 +28,6 @@ import curses.ascii
 from threading import Thread, Lock
 from Queue import Queue
 from serial import Serial
-import pycountry
 import openerp.addons.hw_proxy.controllers.main as hw_proxy
 from openerp import http
 from openerp.tools.config import config
@@ -37,7 +36,7 @@ from openerp.tools.config import config
 logger = logging.getLogger(__name__)
 
 
-class cashlogyAutomaticCashdrawerDriver(Thread):
+class CashlogyAutomaticCashdrawerDriver(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.lock = Lock()
@@ -67,9 +66,12 @@ class cashlogyAutomaticCashdrawerDriver(Thread):
     def send_to_cashdrawer(self, msg):
         if (self.socket != False) :
             try:
-                self.socket.send(msg)
                 BUFFER_SIZE = 1024
-                logger.debug(self.socket.recv(BUFFER_SIZE))
+                answer = "ok"
+#                self.socket.send(msg)
+#                answer = self.socket.recv(BUFFER_SIZE)
+                logger.debug(answer)
+                return answer
             except Exception, e:
                 logger.error('Impossible to send to cashdrawer: %s' % str(e))
 
@@ -79,8 +81,8 @@ class cashlogyAutomaticCashdrawerDriver(Thread):
         connection_info_dict = simplejson.loads(connection_info)
         assert isinstance(connaction_info_dict, dict), \
             'connection_info_dict should be a dict'
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((connection_info_dict['ip_address'], connection_info_dict['tcp_port']))
+#        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#        self.socket.connect((connection_info_dict['ip_address'], connection_info_dict['tcp_port']))
         answer = self.send_to_cashdrawer("#I#")
         return answer
 

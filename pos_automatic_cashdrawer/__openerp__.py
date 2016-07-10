@@ -33,7 +33,7 @@
         'pos_automatic_cashdrawer_view.xml',
         'static/src/xml/templates.xml',
         ],
-    'demo': ['pos_automatic_cash_drawer_demo.xml'],
-    'qweb': ['static/src/xml/pos_automatic_cash_drawer.xml'],
+    'demo': ['pos_automatic_cashdrawer_demo.xml'],
+    'qweb': ['static/src/xml/pos_automatic_cashdrawer.xml'],
     'installable': True,
 }

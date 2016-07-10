@@ -47,5 +47,5 @@ This module has been written by Aurélien DUMAINE <aurelien.dumaine@free.fr>
         'python': ['serial'],
     },
     'data': [],
-    'installable': False,
+    'installable': True,
 }

@@ -2,19 +2,19 @@
 <templates id="template" xml:space="preserve">
     <t t-extend="PaymentScreen-Paymentlines" >
         <t t-jquery=".col-name" t-operation="append">
-            <t t-if="cashregister.journal.type == 'cash' and widget.pos.config.iface_automatic_cashdrawer">
+            <!--            <t t-if="cashregister.journal.type == 'cash' and widget.pos.config.iface_automatic_cashdrawer">-->
                    <button class="automatic-cashdrawer-transaction-start"  t-att-data-cid='line.cid'>Start transaction</button>
-            </t>
+            <!--            </t> -->
         </t>
     </t>
 
     <t t-extend="PaymentScreenWidget" >
         <t t-jquery=".payment-buttons" t-operation="append">
-            <t t-if='widget.pos.config.iface_automatic_cashdrawer'>
+            <!--            <t t-if='widget.pos.config.iface_automatic_cashdrawer'>-->
                 <button class="automatic-cashdrawer-connexion-init">Connect cashdrawer</button>
                 <button class="automatic-cashdrawer-connexion-exit">Disconnect cashdrawer</button>
                 <button class="automatic-cashdrawer-display-backoffice">Display backoffice</button>
-            </t>
+                <!--            </t>-->
         </t>
     </t>
 </templates>
