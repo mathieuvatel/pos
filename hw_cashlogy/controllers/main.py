@@ -40,14 +40,12 @@ logger = logging.getLogger(__name__)
 class cashlogyAutomaticCashdrawerDriver(Thread):
     def __init__(self):
         Thread.__init__(self)
-        self.queue = Queue()
         self.lock = Lock()
         self.status = {'status': 'connecting', 'messages': []}
         self.device_name = "Cashlogy automatic cashdrawer"
         self.socket = False
 
     def get_status(self):
-        self.push_task('status')
         return self.status
 
     def set_status(self, status, message=None):
@@ -66,16 +64,6 @@ class cashlogyAutomaticCashdrawerDriver(Thread):
         elif status == 'disconnected' and message:
             logger.warning('Disconnected Terminal: '+message)
 
-    def lockedstart(self):
-        with self.lock:
-            if not self.isAlive():
-                self.daemon = True
-                self.start()
-
-    def push_task(self, task, data=None):
-        self.lockedstart()
-        self.queue.put((time.time(), task, data))
-
     def send_to_cashdrawer(self, msg):
         if (self.socket != False) :
             try:
@@ -93,12 +81,14 @@ class cashlogyAutomaticCashdrawerDriver(Thread):
             'connection_info_dict should be a dict'
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((connection_info_dict['ip_adress'], connection_info_dict['tcp_port']))
-        response = self.send_to_cashdrawer("#I#")
+        answer = self.send_to_cashdrawer("#I#")
+        return answer
 
     def cashlogy_connection_exit(self):
         '''This function close the connection with the cashdrawer.
         '''
-        response = self.send_to_cashdrawer("#E#")
+        answer = self.send_to_cashdrawer("#E#")
+        return answer
 
     def display_backoffice(self, backoffice_info):
         '''This function display the backoffice on the cashier screen.
@@ -106,7 +96,8 @@ class cashlogyAutomaticCashdrawerDriver(Thread):
         backoffice_info_dict = simplejson.loads(backoffice_info)
         assert isinstance(backoffice_info_dict, dict), \
             'backoffice_info_dict should be a dict'
-        response = self.send_to_cashdrawer("#G#1#1#1#1#1#1#1#1#1#1#1#1#1#")
+        answer = self.send_to_cashdrawer("#G#1#1#1#1#1#1#1#1#1#1#1#1#1#")
+        return answer
 
     def transaction_start(self, payment_info):
         '''This function sends the data to the serial/usb port.
@@ -115,23 +106,13 @@ class cashlogyAutomaticCashdrawerDriver(Thread):
         assert isinstance(payment_info_dict, dict), \
             'payment_info_dict should be a dict'
         amount = str(payment_info['amount'] * 100) #amount is sent in cents to the cashdrawer
+        operation_number = "42"
         display_accept_button = "0"
         screen_on_top= "0"
         see_customer_screen = "0"
-        response = self.send_to_cashdrawer("#C#42#1#"+str(amount)+"#"+see_customer_screen+"#15#15#"+display_accept_button+"#1#"+screen_on_top+"#0#0#")
+        answer = self.send_to_cashdrawer("#C#"+operation_number+"#1#"+str(amount)+"#"+see_customer_screen+"#15#15#"+display_accept_button+"#1#"+screen_on_top+"#0#0#")
+        return answer
 
-    def run(self):
-        while True:
-            try:
-                timestamp, task, data = self.queue.get(True)
-                if task == 'transaction_start':
-                    self.transaction_start(data)
-                if task == 'display_backoffice':
-                    self.display_backoffice(data)
-                elif task == 'status':
-                    pass
-            except Exception as e:
-                self.set_status('error', str(e))
 
 driver = CashlogyAutomaticCashdrawerDriver()
 
@@ -146,7 +127,8 @@ class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
         logger.debug(
             'Cashlogy: Call automatic_cashdrawer_connexion_init with '
             'connection_info=%s', connection_info)
-        driver.push_task('cashlogy_connection_init', connection_info)
+        answer = driver.cashlogy_connection_init(connection_info)
+        return {'info': str(answer)}
 
     @http.route(
         '/hw_proxy/automatic_cashdrawer_connection_exit',
@@ -154,7 +136,8 @@ class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
     def automatic_cashdrawer_connection_exit(self):
         logger.debug(
             'Cashlogy: Call automatic_cashdrawer_connexion_exit')
-        driver.push_task('cashlogy_connection_exit')
+        answer = driver.cashlogy_connection_exit()
+        return {'info': str(answer)}
 
     @http.route(
         '/hw_proxy/automatic_cashdrawer_transaction_start',
@@ -163,7 +146,8 @@ class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
         logger.debug(
             'Cashlogy: Call automatic_cashdrawer_transaction_start with '
             'payment_info=%s', payment_info)
-        driver.push_task('transaction_start', payment_info)
+        answer = driver.transaction_start(payment_info)
+        return {'info': str(answer)}
 
     @http.route(
         '/hw_proxy/automatic_cashdrawer_display_backoffice',
@@ -172,5 +156,6 @@ class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
         logger.debug(
             'Cashlogy: Call automatic_cashdrawer with '
             'backoffice_info=%s', backoffice_info)
-        driver.push_task('display_backoffice', backoffice_info)
+        answer = driver.display_backoffice(backoffice_info)
+        return {'info': str(answer)}
 
