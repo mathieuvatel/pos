@@ -53,7 +53,7 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
                         console.log(amount_expression)
                         var amount_in = amount_expression[1] / 100;
                         var amount_out = amount_expression[2] / 100;
-                        var amount = amount_in - amount_out;
+                        // TODO : Check the amount_out and what is display on screen ?
                         var amount_in = screen.format_currency_no_symbol(amount_in);
                         line.set_amount(amount_in);
                         screen.order_changes();
