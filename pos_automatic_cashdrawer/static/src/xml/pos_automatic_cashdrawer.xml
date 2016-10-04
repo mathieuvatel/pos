@@ -11,8 +11,8 @@
     <t t-extend="PaymentScreenWidget" >
         <t t-jquery=".payment-buttons" t-operation="append">
             <!--            <t t-if='widget.pos.config.iface_automatic_cashdrawer'>-->
-                <button class="automatic-cashdrawer-connexion-init">Connect cashdrawer</button>
-                <button class="automatic-cashdrawer-connexion-exit">Disconnect cashdrawer</button>
+                <button class="automatic-cashdrawer-connection-init">Connect cashdrawer</button>
+                <button class="automatic-cashdrawer-connection-exit">Disconnect cashdrawer</button>
                 <button class="automatic-cashdrawer-display-backoffice">Display backoffice</button>
                 <!--            </t>-->
         </t>

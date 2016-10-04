@@ -23,14 +23,15 @@
 
 import logging
 import simplejson
-import time
-import curses.ascii
+# import time
+# import curses.ascii
 from threading import Thread, Lock
-from Queue import Queue
-from serial import Serial
+# from Queue import Queue
+# from serial import Serial
 import openerp.addons.hw_proxy.controllers.main as hw_proxy
 from openerp import http
-from openerp.tools.config import config
+# from openerp.tools.config import config
+import socket
 
 
 logger = logging.getLogger(__name__)
@@ -64,12 +65,12 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
             logger.warning('Disconnected Terminal: '+message)
 
     def send_to_cashdrawer(self, msg):
-        if (self.socket != False) :
+        if (self.socket is not False):
             try:
                 BUFFER_SIZE = 1024
-                answer = "ok"
-#                self.socket.send(msg)
-#                answer = self.socket.recv(BUFFER_SIZE)
+#                 answer = "ok"
+                self.socket.send(msg)
+                answer = self.socket.recv(BUFFER_SIZE)
                 logger.debug(answer)
                 return answer
             except Exception, e:
@@ -79,10 +80,17 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
         '''This function initialize the cashdrawer.
         '''
         connection_info_dict = simplejson.loads(connection_info)
-        assert isinstance(connaction_info_dict, dict), \
+        assert isinstance(connection_info_dict, dict), \
             'connection_info_dict should be a dict'
-#        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#        self.socket.connect((connection_info_dict['ip_address'], connection_info_dict['tcp_port']))
+        ip_address = connection_info_dict.get('ip_address')
+        tcp_port = connection_info_dict.get('tcp_port')
+        # TODO: handle this case, maybe pop up or display
+        # on the screen like WiFi button
+        if not ip_address or not tcp_port:
+            logger.warning('Configuration error, please configure '
+                           'ip_address and tcp_port.')
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.connect((ip_address, tcp_port))
         answer = self.send_to_cashdrawer("#I#")
         return answer
 
@@ -92,13 +100,12 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
         answer = self.send_to_cashdrawer("#E#")
         return answer
 
-    def display_backoffice(self, backoffice_info):
+    def display_backoffice(self):
         '''This function display the backoffice on the cashier screen.
         '''
-        backoffice_info_dict = simplejson.loads(backoffice_info)
-        assert isinstance(backoffice_info_dict, dict), \
-            'backoffice_info_dict should be a dict'
-        answer = self.send_to_cashdrawer("#G#1#1#1#1#1#1#1#1#1#1#1#1#1#")
+        # All this "1" are active button to be display on the screen
+        message = "#G#1#1#1#1#1#1#1#1#1#1#1#1#1#"
+        answer = self.send_to_cashdrawer(message)
         return answer
 
     def transaction_start(self, payment_info):
@@ -107,12 +114,21 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
         payment_info_dict = simplejson.loads(payment_info)
         assert isinstance(payment_info_dict, dict), \
             'payment_info_dict should be a dict'
-        amount = str(payment_info['amount'] * 100) #amount is sent in cents to the cashdrawer
-        operation_number = "42"
-        display_accept_button = "0"
-        screen_on_top= "0"
-        see_customer_screen = "0"
-        answer = self.send_to_cashdrawer("#C#"+operation_number+"#1#"+str(amount)+"#"+see_customer_screen+"#15#15#"+display_accept_button+"#1#"+screen_on_top+"#0#0#")
+        amount = int(payment_info_dict['amount'] * 100)  # amount is sent in cents to the cashdrawer
+        operation_number = "42"  # Number to be able to track operation
+        display_accept_button = "0"  # Allow the user to confirm the change given by customer
+        screen_on_top = "0"  # Put the screen on top
+        see_customer_screen = "0"  # Display customer screen
+        message = "#C#%s#1#%s#%s#15#15#%s#1#%s#0#0#" % (operation_number,
+                                                        amount,
+                                                        see_customer_screen,
+                                                        display_accept_button,
+                                                        screen_on_top)
+        answer = self.send_to_cashdrawer(message)
+        # Cancel (18€ given, 18€ given back)
+        # answer = "#WR:CANCEL#1800#1800#0#0#"
+        # Validated (20€ given, 2€ given back)
+#         answer = "#0:LEVEL#1700#0#0#0#"
         return answer
 
 
@@ -122,11 +138,12 @@ hw_proxy.drivers['cashlogy_automatic_cashdrawer'] = driver
 
 
 class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
+
     @http.route(
         '/hw_proxy/automatic_cashdrawer_connection_init',
         type='json', auth='none', cors='*')
     def automatic_cashdrawer_connection_init(self, connection_info):
-        logger.debug(
+        logger.info(
             'Cashlogy: Call automatic_cashdrawer_connexion_init with '
             'connection_info=%s', connection_info)
         answer = driver.cashlogy_connection_init(connection_info)
@@ -135,7 +152,7 @@ class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
     @http.route(
         '/hw_proxy/automatic_cashdrawer_connection_exit',
         type='json', auth='none', cors='*')
-    def automatic_cashdrawer_connection_exit(self):
+    def automatic_cashdrawer_connection_exit(self, info=None):
         logger.debug(
             'Cashlogy: Call automatic_cashdrawer_connexion_exit')
         answer = driver.cashlogy_connection_exit()
@@ -144,20 +161,18 @@ class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
     @http.route(
         '/hw_proxy/automatic_cashdrawer_transaction_start',
         type='json', auth='none', cors='*')
-    def automatic_cashdrawer_transaction_start(self, payment_info):
+    def automatic_cashdrawer_transaction_start(self, payment_info=None):
         logger.debug(
             'Cashlogy: Call automatic_cashdrawer_transaction_start with '
             'payment_info=%s', payment_info)
         answer = driver.transaction_start(payment_info)
-        return {'info': str(answer)}
+        return str(answer)
 
     @http.route(
         '/hw_proxy/automatic_cashdrawer_display_backoffice',
         type='json', auth='none', cors='*')
-    def automatic_cashdrawer_display_backoffice(self, backoffice_info):
+    def automatic_cashdrawer_display_backoffice(self, info=None):
         logger.debug(
-            'Cashlogy: Call automatic_cashdrawer with '
-            'backoffice_info=%s', backoffice_info)
-        answer = driver.display_backoffice(backoffice_info)
+            'Cashlogy: Call display_backoffice without info')
+        answer = driver.display_backoffice()
         return {'info': str(answer)}
-
