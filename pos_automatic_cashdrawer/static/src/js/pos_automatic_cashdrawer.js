@@ -7,17 +7,26 @@
 
 odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
     "use strict";
-    var ajax = require('web.ajax');
     var screens = require('point_of_sale.screens');
     var devices = require('point_of_sale.devices');
     var models = require('point_of_sale.models');
-//    var gui = require('point_of_sale.gui');
     var core = require('web.core');
     var _t = core._t;
     var QWeb = core.qweb;
 
     models.load_fields("account.journal",['payment_mode']);
-    models.load_fields("pos.config",['iface_cashdrawer', 'iface_cashdrawer_ip_address', 'iface_cashdrawer_tcp_port']);
+    models.load_fields("pos.config",['iface_automatic_cashdrawer', 'iface_automatic_cashdrawer_ip_address', 'iface_automatic_cashdrawer_tcp_port']);
+
+    // If the user is just checking automatic cashdrawer, then the system will try to connect proxy.
+    var after_load_server_data_original = models.PosModel.prototype.after_load_server_data;
+    models.PosModel = models.PosModel.extend({
+        after_load_server_data: function(session, attributes) {
+            if (this.config.iface_automatic_cashdrawer) {
+                this.config.use_proxy = true;
+            }
+            return after_load_server_data_original.call(this);
+        }
+    });
 
     devices.ProxyDevice.include({
         automatic_cashdrawer_transaction_start: function(line_cid, screen){
@@ -30,8 +39,7 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
                 }
             }
             var data = {'amount': order.get_due(line)}
-//            this.message('automatic_cashdrawer_transaction_start', {'payment_info' : JSON.stringify(data)});
-            ajax.jsonRpc('/hw_proxy/automatic_cashdrawer_transaction_start', 'call', {'payment_info' : JSON.stringify(data)}).then(function (answer) {
+            this.message('automatic_cashdrawer_transaction_start', {'payment_info' : JSON.stringify(data)}).then(function (answer) {
                 // Check if there was any error or a value
                 var answer_type_expression = /[a-zA-Z]+/g;
                 var answer_type = answer.match(answer_type_expression);
@@ -72,24 +80,21 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
                     'ip_address': this.pos.config.iface_cashdrawer_ip_address,
                     'tcp_port': this.pos.config.iface_cashdrawer_tcp_port
                     }
-            this.message('automatic_cashdrawer_connection_init', {'connection_info' : JSON.stringify(data)});
-            ajax.jsonRpc('/hw_proxy/automatic_cashdrawer_connection_init', 'call', {'connection_info': JSON.stringify(data)}).then(function(answer) {
+            this.message('automatic_cashdrawer_connection_init', {'connection_info' : JSON.stringify(data)}).then(function(answer) {
                 console.log(answer);
             });
         },
         automatic_cashdrawer_connection_exit: function(){
             //TODO : call this function on POS exit
             //TODO : only managers should  be able to see/clic this button
-//            this.message('automatic_cashdrawer_connection_exit');
-            ajax.jsonRpc('/hw_proxy/automatic_cashdrawer_connection_exit', 'call', {}).then(function(answer) {
+            this.message('automatic_cashdrawer_connection_exit').then(function(answer) {
                 console.log(answer);
             });
         },
         automatic_cashdrawer_connection_display_backoffice: function(){
             //TODO : only managers should  be able to see/clic this button
             var data = {'bo' : 'null'}
-//            this.message('automatic_cashdrawer_display_backoffice', {'backoffice_info' : JSON.stringify(data)});
-            ajax.jsonRpc('/hw_proxy/automatic_cashdrawer_display_backoffice', 'call', {}).then(function(answer) {
+            this.message('automatic_cashdrawer_display_backoffice', {'backoffice_info' : JSON.stringify(data)}).then(function(answer) {
                 console.log(answer);
             });
         },

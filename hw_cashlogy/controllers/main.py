@@ -124,11 +124,11 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
                                                         see_customer_screen,
                                                         display_accept_button,
                                                         screen_on_top)
-        answer = self.send_to_cashdrawer(message)
+#         answer = self.send_to_cashdrawer(message)
         # Cancel (18€ given, 18€ given back)
         # answer = "#WR:CANCEL#1800#1800#0#0#"
         # Validated (20€ given, 2€ given back)
-#         answer = "#0:LEVEL#1700#0#0#0#"
+        answer = "#0:LEVEL#1700#0#0#0#"
         return answer
 
 
