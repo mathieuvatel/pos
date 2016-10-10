@@ -80,6 +80,8 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
                 'connection_info_dict should be a dict'
             ip_address = connection_info_dict.get('ip_address')
             tcp_port = connection_info_dict.get('tcp_port')
+            if tcp_port:
+                tcp_port = int(tcp_port)
             # TODO: handle this case, maybe pop up or display
             # on the screen like WiFi button
             if not ip_address or not tcp_port:
@@ -88,7 +90,8 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
                 self.set_status('disconnected')
             else:
                 try:
-                    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.socket = socket.socket(socket.AF_INET,
+                                                socket.SOCK_STREAM)
                     self.socket.connect((ip_address, tcp_port))
                     self.set_status('connected')
                 except Exception, e:
@@ -133,11 +136,11 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
                                                         see_customer_screen,
                                                         display_accept_button,
                                                         screen_on_top)
-#         answer = self.send_to_cashdrawer(message)
+        answer = self.send_to_cashdrawer(message)
         # Cancel (18€ given, 18€ given back)
         # answer = "#WR:CANCEL#1800#1800#0#0#"
         # Validated (20€ given, 2€ given back)
-        answer = "#0:LEVEL#1700#0#0#0#"
+        # answer = "#WR:LEVEL#1700#0#0#0#"
         return answer
 
 driver = CashlogyAutomaticCashdrawerDriver()
@@ -189,7 +192,7 @@ class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
     @http.route(
         '/hw_proxy/automatic_cashdrawer_display_backoffice',
         type='json', auth='none', cors='*')
-    def automatic_cashdrawer_display_backoffice(self, info=None):
+    def automatic_cashdrawer_display_backoffice(self, backoffice_info=None):
         logger.debug(
             'Cashlogy: Call display_backoffice without info')
         answer = driver.display_backoffice()
