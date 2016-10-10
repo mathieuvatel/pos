@@ -23,14 +23,9 @@
 
 import logging
 import simplejson
-# import time
-# import curses.ascii
 from threading import Thread, Lock
-# from Queue import Queue
-# from serial import Serial
 import openerp.addons.hw_proxy.controllers.main as hw_proxy
 from openerp import http
-# from openerp.tools.config import config
 import socket
 
 
@@ -60,9 +55,9 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
                 self.status['messages'] = []
 
         if status == 'error' and message:
-            logger.error('Payment Terminal Error: '+message)
+            logger.error('Cashlogy Error: ' + message)
         elif status == 'disconnected' and message:
-            logger.warning('Disconnected Terminal: '+message)
+            logger.warning('Cashlogy Disconnected: ' + message)
 
     def send_to_cashdrawer(self, msg):
         if (self.socket is not False):
@@ -76,21 +71,35 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
             except Exception, e:
                 logger.error('Impossible to send to cashdrawer: %s' % str(e))
 
+    def cashlogy_connection_check(self, connection_info):
+        '''This function initialize the cashdrawer.
+        '''
+        if self.socket is False:
+            connection_info_dict = simplejson.loads(connection_info)
+            assert isinstance(connection_info_dict, dict), \
+                'connection_info_dict should be a dict'
+            ip_address = connection_info_dict.get('ip_address')
+            tcp_port = connection_info_dict.get('tcp_port')
+            # TODO: handle this case, maybe pop up or display
+            # on the screen like WiFi button
+            if not ip_address or not tcp_port:
+                logger.warning('Configuration error, please configure '
+                               'ip_address and tcp_port.')
+                self.set_status('disconnected')
+            else:
+                try:
+                    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.socket.connect((ip_address, tcp_port))
+                    self.set_status('connected')
+                except Exception, e:
+                    logger.error('Impossible to connect the cashdrawer: %s' % str(e))
+                    self.set_status('disconnected')
+
     def cashlogy_connection_init(self, connection_info):
         '''This function initialize the cashdrawer.
         '''
-        connection_info_dict = simplejson.loads(connection_info)
-        assert isinstance(connection_info_dict, dict), \
-            'connection_info_dict should be a dict'
-        ip_address = connection_info_dict.get('ip_address')
-        tcp_port = connection_info_dict.get('tcp_port')
-        # TODO: handle this case, maybe pop up or display
-        # on the screen like WiFi button
-        if not ip_address or not tcp_port:
-            logger.warning('Configuration error, please configure '
-                           'ip_address and tcp_port.')
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((ip_address, tcp_port))
+        if self.socket is False:
+            self.cashlogy_connection_check(connection_info)
         answer = self.send_to_cashdrawer("#I#")
         return answer
 
@@ -131,13 +140,22 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
         answer = "#0:LEVEL#1700#0#0#0#"
         return answer
 
-
 driver = CashlogyAutomaticCashdrawerDriver()
 
 hw_proxy.drivers['cashlogy_automatic_cashdrawer'] = driver
 
 
 class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
+
+    @http.route(
+        '/hw_proxy/automatic_cashdrawer_connection_check',
+        type='json', auth='none', cors='*')
+    def automatic_cashdrawer_connection_check(self, connection_info):
+        logger.info(
+            'Cashlogy: Call automatic_cashdrawer_connexion_check with '
+            'connection_info=%s', connection_info)
+        answer = driver.cashlogy_connection_check(connection_info)
+        return {'info': str(answer)}
 
     @http.route(
         '/hw_proxy/automatic_cashdrawer_connection_init',
@@ -166,7 +184,7 @@ class CashlogyAutomaticCashdrawerProxy(hw_proxy.Proxy):
             'Cashlogy: Call automatic_cashdrawer_transaction_start with '
             'payment_info=%s', payment_info)
         answer = driver.transaction_start(payment_info)
-        return str(answer)
+        return {'info': str(answer)}
 
     @http.route(
         '/hw_proxy/automatic_cashdrawer_display_backoffice',

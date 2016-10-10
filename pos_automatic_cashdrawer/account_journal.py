@@ -2,8 +2,7 @@
 ##############################################################################
 #
 #    POS Payment Terminal module for Odoo
-#    Copyright (C) 2014 Aurélien DUMAINE
-#    Copyright (C) 2015 Akretion (www.akretion.com)
+#    Copyright (C) 2015 Mathieu VATEL <mathieu@julius.fr>
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as
@@ -20,21 +19,12 @@
 #
 ##############################################################################
 
+from openerp import models, fields
 
-{
-    'name': 'POS Automatic Cashdrawer',
-    'version': '9.0.0.1.0',
-    'category': 'Point Of Sale',
-    'summary': 'Manage Automatic Cashdrawer device from POS front end',
-    'author': "Aurélien DUMAINE",
-    'license': 'AGPL-3',
-    'depends': ['point_of_sale'],
-    'data': [
-        'pos_automatic_cashdrawer_view.xml',
-        'account_journal_view.xml',
-        'static/src/xml/templates.xml',
-        ],
-    'qweb': ['static/src/xml/pos_automatic_cashdrawer.xml'],
-    'demo': ['pos_automatic_cashdrawer_demo.xml'],
-    'installable': True,
-}
+
+class AccountJournal(models.Model):
+    _inherit = 'account.journal'
+
+    iface_automatic_cashdrawer = fields.Boolean(
+        'Automatic cashdrawer',
+        help="Check this if this journal is linked to an automatic cashdrawer")
