@@ -31,4 +31,8 @@ class PosConfig(models.Model):
         help="An automatic cashdrawer is available on the Proxy")
 
     iface_automatic_cashdrawer_ip_address = fields.Char('Automatic cashdrawer IP address')
-    iface_automatic_cashdrawer_tcp_port = fields.Char('Automatic cashdrawer TCP port') #WARNING : set a port bigger than 1024 to allow a non-root user to listen on it
+    iface_automatic_cashdrawer_tcp_port = fields.Char('Automatic cashdrawer TCP port') # WARNING : set a port bigger than 1024 to allow a non-root user to listen on it
+    iface_automatic_cashdrawer_display_accept_button = fields.\
+        Boolean('Automatic cashdrawer display accept button', default=False)
+    iface_automatic_cashdrawer_screen_on_top = fields.\
+        Boolean('Automatic cashdrawer screen on top', default=False)

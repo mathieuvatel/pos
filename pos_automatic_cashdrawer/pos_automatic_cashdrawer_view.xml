@@ -9,8 +9,14 @@
             <field name="arch" type="xml">
                 <field name="iface_cashdrawer" position="after">
                     <field name="iface_automatic_cashdrawer"/>
-                    <field name="iface_automatic_cashdrawer_ip_address"/>
-                    <field name="iface_automatic_cashdrawer_tcp_port"/>
+                    <field name="iface_automatic_cashdrawer_ip_address"
+                        attrs="{'invisible': [('iface_automatic_cashdrawer', '=', False)]}"/>
+                    <field name="iface_automatic_cashdrawer_tcp_port"
+                        attrs="{'invisible': [('iface_automatic_cashdrawer', '=', False)]}"/>
+                    <field name="iface_automatic_cashdrawer_display_accept_button"
+                        attrs="{'invisible': [('iface_automatic_cashdrawer', '=', False)]}"/>
+                    <field name="iface_automatic_cashdrawer_screen_on_top"
+                        attrs="{'invisible': [('iface_automatic_cashdrawer', '=', False)]}"/>
                 </field>
             </field>
         </record>
