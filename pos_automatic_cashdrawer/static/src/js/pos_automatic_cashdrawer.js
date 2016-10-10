@@ -14,8 +14,14 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
     var _t = core._t;
     var QWeb = core.qweb;
 
-    models.load_fields("account.journal",['payment_mode']);
-    models.load_fields("pos.config",['iface_automatic_cashdrawer', 'iface_automatic_cashdrawer_ip_address', 'iface_automatic_cashdrawer_tcp_port']);
+    models.load_fields("account.journal", ['payment_mode',
+                                           'iface_automatic_cashdrawer']);
+    models.load_fields("pos.config", ['iface_automatic_cashdrawer',
+                                      'iface_automatic_cashdrawer_ip_address',
+                                      'iface_automatic_cashdrawer_tcp_port',
+                                      'iface_automatic_cashdrawer_display_accept_button',
+                                      'iface_automatic_cashdrawer_screen_on_top'
+                                      ]);
 
     // If the user is just checking automatic cashdrawer, then the system will try to connect proxy.
     var after_load_server_data_original = models.PosModel.prototype.after_load_server_data;
@@ -28,52 +34,67 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
         },
     });
 
+    models.Paymentline = models.Paymentline.extend({
+        get_automatic_cashdrawer: function(){
+            return this.cashregister.journal.iface_automatic_cashdrawer;
+        },
+    });
+
     devices.ProxyDevice.include({
         automatic_cashdrawer_transaction_start: function(line_cid, screen){
             var line;
             var order = this.pos.get_order();
-            var lines = order.get_paymentlines();
-            for ( var i = 0; i < lines.length; i++ ) {
-                if (lines[i].cid === line_cid) {
-                    line = lines[i];
-                }
-            }
-            var data = {'amount': order.get_due(line)}
-            this.message('automatic_cashdrawer_transaction_start', {'payment_info' : JSON.stringify(data)}).then(function (answer) {
-                // Check if there was any error or a value
-                var answer_info = answer['info'];
-                if (answer_info) {
-                    var answer_type_expression = /[a-zA-Z]+/g;
-                    var answer_type = answer_info.match(answer_type_expression);
-                    if (answer_type) {
-                        // If there is an answer type
-                        if (answer_type[0] == "WR" && answer_type[1] == "CANCEL") {
-                            // Case #WR:CANCEL#b#c#d#e# : answer_type[0] == "WR" and answer_type[1] == "CANCEL"
-                            // TODO : check what to do here. But I think this should do nothing.
-                        }
-                        else if (answer_type[0] == "ER") {
-                            // Case #ER:xxxx#b#c#d#e# : answer_type[0] == "ER"
-                            // TODO : check what to do here. But I think this wont append because the cash drawer wont give back this error.
-                        }
-                        else if (answer_type[0] == "WR" && answer_type[1] == "LEVEL") {
-                            // Case #WR:LEVEL#b#c#d#e#: answer_type[0] == "LEVEL"
-                            // The return says that an amount was correctly given to the cache machine
-                            var amount_expression = /[0-9]+/g;
-                            var amount_expression = answer_info.match(amount_expression);
-                            var amount_in = amount_expression[0] / 100;
-                            var amount_out = amount_expression[1] / 100;
-                            // TODO : Check the amount_out and what is display on screen ?
-                            var amount_in = screen.format_currency_no_symbol(amount_in);
-                            line.set_amount(amount_in);
-                            screen.order_changes();
-                            screen.render_paymentlines();
-                            var amount_in_formatted = screen.format_currency_no_symbol(amount_in);
-                            screen.$('.paymentline.selected .edit').text(amount_in_formatted);
+            if (order.selected_paymentline) {
+                line = order.selected_paymentline;
+                var data = {
+                        'amount': order.get_due(line),
+                        'display_accept_button': this.pos.config.iface_automatic_cashdrawer_display_accept_button,
+                        'screen_on_top': this.pos.config.iface_automatic_cashdrawer_screen_on_top
+                        };
+                this.message('automatic_cashdrawer_transaction_start', {'payment_info' : JSON.stringify(data)}).then(function (answer) {
+                    // Check if there was any error or a value
+                    var answer_info = answer['info'];
+                    if (answer_info) {
+                        var answer_type_expression = /[a-zA-Z]+/g;
+                        var answer_type = answer_info.match(answer_type_expression);
+                        if (answer_type) {
+                            // If there is an answer type
+                            if (answer_type[0] == "WR" && answer_type[1] == "CANCEL") {
+                                // Case #WR:CANCEL#b#c#d#e# : answer_type[0] == "WR" and answer_type[1] == "CANCEL"
+                                // TODO : check what to do here. But I think this should do nothing.
+                            }
+                            else if (answer_type[0] == "ER") {
+                                // Case #ER:xxxx#b#c#d#e# : answer_type[0] == "ER"
+                                // TODO : check what to do here. But I think this wont append because the cash drawer wont give back this error.
+                            }
+                            else if (answer_type[0] == "WR" && answer_type[1] == "LEVEL") {
+                                // Case #WR:LEVEL#b#c#d#e#: answer_type[0] == "LEVEL"
+                                // The return says that an amount was correctly given to the cache machine
+                                var amount_expression = /[0-9]+/g;
+                                var amount_expression = answer_info.match(amount_expression);
+                                var amount_in = amount_expression[0] / 100;
+                                var amount_out = amount_expression[1] / 100;
+                                // TODO : Check the amount_out and what is display on screen ?
+                                var amount_in = screen.format_currency_no_symbol(amount_in);
+                                order.selected_paymentline.set_amount(amount_in);
+                                screen.order_changes();
+                                screen.render_paymentlines();
+                                var amount_in_formatted = screen.format_currency_no_symbol(amount_in);
+                                screen.$('.paymentline.selected .edit').text(amount_in_formatted);
+                                screen.$('.delete-button').css('display', 'none');
+                                screen.$('.automatic-cashdrawer-transaction-start').css('display', 'none');
+                            }
                         }
                     }
-                }
-            });
-            //TODO : this function should check the real amount received, and correct it / handle warnings and errors sent from the cashdrawer
+                });
+            }
+//            var lines = order.get_paymentlines();
+//            for ( var i = 0; i < lines.length; i++ ) {
+//                if (lines[i].cid === line_cid) {
+//                    line = lines[i];
+//                }
+//            }
+            // TODO : this function should check the real amount received, and correct it / handle warnings and errors sent from the cashdrawer
         },
         automatic_cashdrawer_connection_check: function(){
             // call this function on POS loading to be able to know if the machine is available
@@ -85,8 +106,8 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
             self.message('automatic_cashdrawer_connection_check', {'connection_info' : JSON.stringify(data)});
         },
         automatic_cashdrawer_connection_init: function(){
-            //TODO : call this function on POS loading
-            //TODO : only managers should be able to see/clic this button
+            // TODO : call this function on POS loading
+            // TODO : only managers should be able to see/clic this button
             var data = {
                     'ip_address': this.pos.config.iface_automatic_cashdrawer_ip_address,
                     'tcp_port': this.pos.config.iface_automatic_cashdrawer_tcp_port
@@ -96,14 +117,14 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
             });
         },
         automatic_cashdrawer_connection_exit: function(){
-            //TODO : call this function on POS exit
-            //TODO : only managers should  be able to see/clic this button
+            // TODO : call this function on POS exit
+            // TODO : only managers should  be able to see/clic this button
             this.message('automatic_cashdrawer_connection_exit').then(function(answer) {
                 console.log(answer);
             });
         },
         automatic_cashdrawer_connection_display_backoffice: function(){
-            //TODO : only managers should  be able to see/clic this button
+            // TODO : only managers should  be able to see/clic this button
             var data = {'bo' : 'null'}
             this.message('automatic_cashdrawer_display_backoffice', {'backoffice_info' : JSON.stringify(data)}).then(function(answer) {
                 console.log(answer);
