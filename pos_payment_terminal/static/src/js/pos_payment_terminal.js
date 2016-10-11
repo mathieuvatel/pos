@@ -71,7 +71,7 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
 //                }
 //            }
             var data = {
-                    'amount' : line.get_amount(),
+                    'amount' : order.get_due(line),
                     'currency_iso' : currency_iso,
                     'payment_mode' : line.cashregister.journal.payment_mode
                     };
