@@ -22,7 +22,7 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
 
     models.Paymentline = models.Paymentline.extend({
         get_automatic_payment_terminal: function() {
-            if (this.cashregister.journal.payment_mode == 'card' && this.config.iface_payment_terminal) {
+            if (this.cashregister.journal.payment_mode == 'card' && this.pos.config.iface_payment_terminal) {
                 return true;
             }
         },
@@ -63,17 +63,18 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
 
     devices.ProxyDevice.include({
         payment_terminal_transaction_start: function(screen, currency_iso){
-            var line;
-            var lines = this.pos.get_order().get_paymentlines();
-            for ( var i = 0; i < lines.length; i++ ) {
-                if (lines[i].cid === line_cid) {
-                    line = lines[i];
-                }
-            }
+            var order = this.pos.get_order();
+            var line = order.selected_paymentline;
+//            for ( var i = 0; i < lines.length; i++ ) {
+//                if (lines[i].cid === line_cid) {
+//                    line = lines[i];
+//                }
+//            }
             var data = {
                     'amount' : line.get_amount(),
                     'currency_iso' : currency_iso,
-                    'payment_mode' : line.cashregister.journal.payment_mode};
+                    'payment_mode' : line.cashregister.journal.payment_mode
+                    };
             //console.log(JSON.stringify(data));
             this.message('payment_terminal_transaction_start', {'payment_info' : JSON.stringify(data)});
         },
