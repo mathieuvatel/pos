@@ -35,7 +35,7 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
     });
 
     models.Paymentline = models.Paymentline.extend({
-        get_automatic_cashdrawer: function(){
+        get_automatic_cashdrawer: function() {
             return this.cashregister.journal.iface_automatic_cashdrawer;
         },
     });
@@ -45,9 +45,8 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
             var line;
             var order = this.pos.get_order();
             if (order.selected_paymentline) {
-                line = order.selected_paymentline;
                 var data = {
-                        'amount': order.get_due(line),
+                        'amount': order.get_due(order.selected_paymentline),
                         'display_accept_button': this.pos.config.iface_automatic_cashdrawer_display_accept_button,
                         'screen_on_top': this.pos.config.iface_automatic_cashdrawer_screen_on_top
                         };
@@ -133,16 +132,24 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
     });
 
     screens.PaymentScreenWidget.include({
-            render_paymentlines : function(){
-            this._super.apply(this, arguments);
-                    var self = this;
-                    // Directly call the automatic cashdrawer if the journal is checked
-//                  self.pos.proxy.automatic_cashdrawer_transaction_start($(this).data('cid'), self);
-                    this.$('.paymentlines-container').unbind('click').on('click','.automatic-cashdrawer-transaction-start', function(event){
-            // Why this "on" thing links several time the button to the action if I don't use "unlink" to reset the button links before ?
-                        //console.log(event.target);
-                        self.pos.proxy.automatic_cashdrawer_transaction_start($(this).data('cid'), self);
-                    });
+//            render_paymentlines : function(){
+//                this._super.apply(this, arguments);
+//                var self = this;
+//                        // Directly call the automatic cashdrawer if the journal is checked
+////                  self.pos.proxy.automatic_cashdrawer_transaction_start($(this).data('cid'), self);
+//                this.$('.paymentlines-container').unbind('click').on('click','.automatic-cashdrawer-transaction-start', function(event){
+//                // Why this "on" thing links several time the button to the action if I don't use "unlink" to reset the button links before ?
+//                            //console.log(event.target);
+//                    self.pos.proxy.automatic_cashdrawer_transaction_start($(this).data('cid'), self);
+//                });
+//            },
+            click_paymentmethods: function(id) {
+                this._super.apply(this, arguments);
+                var line = this.pos.get_order().selected_paymentline;
+                var auto = line.get_automatic_cashdrawer();
+                if (auto) {
+                    this.pos.proxy.automatic_cashdrawer_transaction_start($(this).data('cid'), this);
+                }
             },
 
             renderElement : function(){
