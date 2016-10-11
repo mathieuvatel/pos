@@ -42,25 +42,25 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
     });
 
     devices.ProxyDevice.include({
-        init: function(){
-            this._super.apply(this, arguments);
-            this.set('cashdrawer_status', {});
-            this.set_connection_cashdrawer_status('disconnected');
-        },
-        set_connection_cashdrawer_status: function(cashdrawer_status, drivers){
-            var oldstatus = this.get('cashdrawer_status');
-            var newstatus = {};
-            newstatus.cashdrawer_status = cashdrawer_status;
-            newstatus.drivers = cashdrawer_status === 'disconnected' ? {} : oldstatus.drivers;
-            newstatus.drivers = drivers ? drivers : newstatus.drivers;
-            this.set('cashdrawer_status', newstatus);
-        },
+//        init: function(){
+//            this._super.apply(this, arguments);
+//            this.set('cashdrawer_status', {});
+//            this.set_connection_cashdrawer_status('disconnected');
+//        },
+//        set_connection_cashdrawer_status: function(cashdrawer_status, drivers){
+//            var oldstatus = this.get('cashdrawer_status');
+//            var newstatus = {};
+//            newstatus.cashdrawer_status = cashdrawer_status;
+//            newstatus.drivers = cashdrawer_status === 'disconnected' ? {} : oldstatus.drivers;
+//            newstatus.drivers = drivers ? drivers : newstatus.drivers;
+//            this.set('cashdrawer_status', newstatus);
+//        },
         automatic_cashdrawer_transaction_start: function(screen) {
-            var line;
             var order = this.pos.get_order();
-            if (order.selected_paymentline) {
+            var line = order.selected_paymentline;
+            if (line) {
                 var data = {
-                        'amount': order.get_due(order.selected_paymentline),
+                        'amount': order.get_due(line),
                         'display_accept_button': this.pos.config.iface_automatic_cashdrawer_display_accept_button,
                         'screen_on_top': this.pos.config.iface_automatic_cashdrawer_screen_on_top
                         };
@@ -89,7 +89,7 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
                                 var amount_out = amount_expression[1] / 100;
                                 if (!amount_in == 0) {
                                     // TODO : Check the amount_out and what is display on screen ?
-                                    order.selected_paymentline.set_amount(amount_in);
+                                    line.set_amount(amount_in);
                                     screen.order_changes();
                                     screen.render_paymentlines();
                                     var amount_in_formatted = screen.format_currency_no_symbol(amount_in);
@@ -142,9 +142,11 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
 
     screens.PaymentScreenWidget.include({
         is_manager: function () {
-            var user = this.pos.get_cashier();
-            if (user.role === 'manager') {
-                return true;
+            if (this.pos) {
+                var user = this.pos.get_cashier();
+                if (user.role === 'manager') {
+                    return true;
+                }
             }
             return false;
         },
@@ -186,79 +188,79 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
         },
     });
 
-    /* ------- Uncomment init method bellow to be able to get  auto cashdrawer widget------- */
-    chrome.Chrome.include({
-//        init: function() {
-//            this._super.apply(this, arguments);
-//            this.add_autocashdrawerwidget();
-//        },
-        add_autocashdrawerwidget: function () {
-            var native_widgets = this.widgets;
-            var autocashdrawerwidget = {
-                    'name':   'auto_cashdrawer_status',
-                    'widget': AutoCashdrawerWidget,
-                    'append':  '.pos-rightheader',
-                    'condition': function(){ return this.pos.config.iface_automatic_cashdrawer; },
-                }
-            var sorted_widgets = []
-            for (var i = 0, len = native_widgets.length; i < len; i++) {
-                sorted_widgets.push(native_widgets[i]);
-                if (native_widgets[i].name === 'order_selector') {
-                    sorted_widgets.push(autocashdrawerwidget);
-                }
-            }
-            this.widgets = sorted_widgets;
-        }
-    });
-
-    /* ------- Synch. automatic cashdrawer Status ------- */
-    // Displays if the automatic cashdrawer is not initialized
-    var AutoCashdrawerWidget = chrome.StatusWidget.extend({
-         template: 'AutoCashdrawerWidget',
-         cashdrawer_status: ['connected',
-                             'connecting',
-                             'initialized',
-                             'disconnected',
-                             'warning',
-                             'error'],
-         set_cashdrawer_status: function(cashdrawer_status, msg){
-             for(var i = 0; i < this.cashdrawer_status.length; i++){
-                 this.$('.js_'+this.cashdrawer_status[i]).addClass('oe_hidden');
-             }
-             this.$('.js_'+cashdrawer_status).removeClass('oe_hidden');
-             
-             if(msg){
-                 this.$('.js_msg').removeClass('oe_hidden').html(msg);
-             }else{
-                 this.$('.js_msg').addClass('oe_hidden').html('');
-             }
-         },
-         set_smart_cashdrawer_status: function(cashdrawer_status) {
-             if (cashdrawer_status.cashdrawer_status === 'connected'){
-                 var warning = false;
-                 var msg = '';
-                 if (this.pos.config.iface_automatic_cashdrawer) {
-                     var automatic_cashdrawer = cashdrawer_status.drivers.automatic_cashdrawer ? cashdrawer_status.drivers.automatic_cashdrawer.status : false;
-                     if( automatic_cashdrawer != 'connected' && automatic_cashdrawer != 'connecting'){
-                         warning = true;
-                         msg += _t('Automatic cashdrawer');
-                     }
-                 }
-                 msg = msg ? msg + ' ' + _t('Offline') : msg;
-                 this.set_cashdrawer_status(warning ? 'warning' : 'connected', msg);
-             } else {
-                 this.set_cashdrawer_status(cashdrawer_status.cashdrawer_status, {});
-             }
-         },
-         start: function(){
-             var self = this;
-             this.set_smart_cashdrawer_status(this.pos.proxy.get('cashdrawer_status'));
-             this.$el.click(function(){
-                 // TODO: improve this !
-                 self.set_cashdrawer_status('connecting', {});
-                 self.pos.proxy.automatic_cashdrawer_connection_check();
-                 self.set_cashdrawer_status('connected', {});
-             });
-         },
-    });
+//    /* ------- Uncomment init method bellow to be able to get auto cashdrawer widget------- */
+//    chrome.Chrome.include({
+////        init: function() {
+////            this._super.apply(this, arguments);
+////            this.add_autocashdrawerwidget();
+////        },
+//        add_autocashdrawerwidget: function () {
+//            var native_widgets = this.widgets;
+//            var autocashdrawerwidget = {
+//                    'name':   'auto_cashdrawer_status',
+//                    'widget': AutoCashdrawerWidget,
+//                    'append':  '.pos-rightheader',
+//                    'condition': function(){ return this.pos.config.iface_automatic_cashdrawer; },
+//                }
+//            var sorted_widgets = []
+//            for (var i = 0, len = native_widgets.length; i < len; i++) {
+//                sorted_widgets.push(native_widgets[i]);
+//                if (native_widgets[i].name === 'order_selector') {
+//                    sorted_widgets.push(autocashdrawerwidget);
+//                }
+//            }
+//            this.widgets = sorted_widgets;
+//        }
+//    });
+//
+//    /* ------- Synch. automatic cashdrawer Status ------- */
+//    // Displays if the automatic cashdrawer is not initialized
+//    var AutoCashdrawerWidget = chrome.StatusWidget.extend({
+//         template: 'AutoCashdrawerWidget',
+//         cashdrawer_status: ['connected',
+//                             'connecting',
+//                             'initialized',
+//                             'disconnected',
+//                             'warning',
+//                             'error'],
+//         set_cashdrawer_status: function(cashdrawer_status, msg){
+//             for(var i = 0; i < this.cashdrawer_status.length; i++){
+//                 this.$('.js_'+this.cashdrawer_status[i]).addClass('oe_hidden');
+//             }
+//             this.$('.js_'+cashdrawer_status).removeClass('oe_hidden');
+//             
+//             if(msg){
+//                 this.$('.js_msg').removeClass('oe_hidden').html(msg);
+//             }else{
+//                 this.$('.js_msg').addClass('oe_hidden').html('');
+//             }
+//         },
+//         set_smart_cashdrawer_status: function(cashdrawer_status) {
+//             if (cashdrawer_status.cashdrawer_status === 'connected'){
+//                 var warning = false;
+//                 var msg = '';
+//                 if (this.pos.config.iface_automatic_cashdrawer) {
+//                     var automatic_cashdrawer = cashdrawer_status.drivers.automatic_cashdrawer ? cashdrawer_status.drivers.automatic_cashdrawer.status : false;
+//                     if( automatic_cashdrawer != 'connected' && automatic_cashdrawer != 'connecting'){
+//                         warning = true;
+//                         msg += _t('Automatic cashdrawer');
+//                     }
+//                 }
+//                 msg = msg ? msg + ' ' + _t('Offline') : msg;
+//                 this.set_cashdrawer_status(warning ? 'warning' : 'connected', msg);
+//             } else {
+//                 this.set_cashdrawer_status(cashdrawer_status.cashdrawer_status, {});
+//             }
+//         },
+//         start: function(){
+//             var self = this;
+//             this.set_smart_cashdrawer_status(this.pos.proxy.get('cashdrawer_status'));
+//             this.$el.click(function(){
+//                 // TODO: improve this !
+//                 self.set_cashdrawer_status('connecting', {});
+//                 self.pos.proxy.automatic_cashdrawer_connection_check();
+//                 self.set_cashdrawer_status('connected', {});
+//             });
+//         },
+//    });
 });
