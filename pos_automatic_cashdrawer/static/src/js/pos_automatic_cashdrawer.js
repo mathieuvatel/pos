@@ -76,15 +76,19 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
                         if (answer_type) {
                             // If there is an answer type
                             if (answer_type[0] == "WR" && answer_type[1] == "CANCEL") {
-                                // Case #WR:CANCEL#b#c#d#e# : answer_type[0] == "WR" and answer_type[1] == "CANCEL"
+                                // Case #WR:CANCEL#b#c#d#e# :
                                 // TODO : check what to do here. But I think this should do nothing.
+                            }
+                            else if (answer_type[0] == "ER" && answer_type[1] == "BUSY") {
+                                // Case #ER:BUSY# : answer_type[0] == "ER"
+                                // TODO : check what to do here. But I think this wont append because the cash drawer wont give back this error.
                             }
                             else if (answer_type[0] == "ER") {
                                 // Case #ER:xxxx#b#c#d#e# : answer_type[0] == "ER"
                                 // TODO : check what to do here. But I think this wont append because the cash drawer wont give back this error.
                             }
                             else if (answer_type[0] == "WR" && answer_type[1] == "LEVEL") {
-                                // Case #WR:LEVEL#b#c#d#e#: answer_type[0] == "LEVEL"
+                                // Case #WR:LEVEL#b#c#d#e#:
                                 // The return says that an amount was correctly given to the cache machine
                                 var amount_expression = /[0-9]+/g;
                                 var amount_expression = answer_info.match(amount_expression);
@@ -184,7 +188,7 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
                 self.pos.proxy.automatic_cashdrawer_connection_exit();
             });
             this.$('.automatic-cashdrawer-display-backoffice').click(function() {
-                var user = this.pos.get_cashier();
+                var user = self.pos.get_cashier();
                 if (user.role === 'manager') {
                     self.pos.proxy.automatic_cashdrawer_connection_display_backoffice();
                 }
