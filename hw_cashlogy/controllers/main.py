@@ -36,27 +36,27 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.lock = Lock()
-        self.status = {'status': 'connecting', 'messages': []}
+        self.cashdrawer_status = {'status': 'connecting', 'messages': []}
         self.device_name = "Cashlogy automatic cashdrawer"
         self.socket = False
 
     def get_status(self):
-        return self.status
+        return self.cashdrawer_status
 
-    def set_status(self, status, message=None):
-        if status == self.status['status']:
-            if message is not None and message != self.status['messages'][-1]:
-                self.status['messages'].append(message)
+    def set_status(self, cashdrawer_status, message=None):
+        if cashdrawer_status == self.cashdrawer_status['status']:
+            if message is not None and message != self.cashdrawer_status['messages'][-1]:
+                self.cashdrawer_status['messages'].append(message)
         else:
-            self.status['status'] = status
+            self.cashdrawer_status['cashdrawer_status'] = cashdrawer_status
             if message:
-                self.status['messages'] = [message]
+                self.cashdrawer_status['messages'] = [message]
             else:
-                self.status['messages'] = []
+                self.cashdrawer_status['messages'] = []
 
-        if status == 'error' and message:
+        if cashdrawer_status == 'error' and message:
             logger.error('Cashlogy Error: ' + message)
-        elif status == 'disconnected' and message:
+        elif cashdrawer_status == 'disconnected' and message:
             logger.warning('Cashlogy Disconnected: ' + message)
 
     def send_to_cashdrawer(self, msg):
@@ -66,9 +66,13 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
 #                 answer = "ok"
                 self.socket.send(msg)
                 answer = self.socket.recv(BUFFER_SIZE)
+                if msg == '#I#':
+                    self.set_status('initialized')
                 return answer
             except Exception, e:
                 logger.error('Impossible to send to cashdrawer: %s' % str(e))
+                if self.socket is False:
+                    self.set_status('disconnected')
 
     def cashlogy_connection_check(self, connection_info):
         '''This function initialize the cashdrawer.
@@ -142,6 +146,7 @@ class CashlogyAutomaticCashdrawerDriver(Thread):
         # Validated (20€ given, 2€ given back)
         # answer = "#WR:LEVEL#1700#0#0#0#"
         return answer
+
 
 driver = CashlogyAutomaticCashdrawerDriver()
 
