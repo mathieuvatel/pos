@@ -34,15 +34,17 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
         add_paymentline: function(cashregister) {
             this.assert_editable();
             var newPaymentline = new exports.Paymentline({},{order: this, cashregister:cashregister, pos: this.pos});
+            var auto = line.get_automatic_payment_terminal();
+            console.log(auto);
             if(cashregister.journal.type !== 'cash' || this.pos.config.iface_precompute_cash){
-                if (!newPaymentline.get_automatic_payment_terminal()) {
+//                if (!auto) {
                     newPaymentline.set_amount( Math.max(this.get_due(),0) );
-                }
+//                }
             }
             this.paymentlines.add(newPaymentline);
             this.select_paymentline(newPaymentline);
         },
-    };
+    });
 
 //    devices.ProxyDevice.include({
 //        payment_terminal_transaction_start: function(line_cid, currency_iso){
