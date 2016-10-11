@@ -58,6 +58,7 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
         automatic_cashdrawer_transaction_start: function(screen) {
             var order = this.pos.get_order();
             var line = order.selected_paymentline;
+            console.log(line);
             if (line) {
                 var data = {
                         'amount': order.get_due(line),
@@ -67,6 +68,8 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
                 this.message('automatic_cashdrawer_transaction_start', {'payment_info' : JSON.stringify(data)}).then(function (answer) {
                     // Check if there was any error or a value
                     var answer_info = answer['info'];
+                    console.log(line);
+                    console.log(answer_info);
                     if (answer_info) {
                         var answer_type_expression = /[a-zA-Z]+/g;
                         var answer_type = answer_info.match(answer_type_expression);
@@ -164,6 +167,7 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
         click_paymentmethods: function(id) {
             this._super.apply(this, arguments);
             var line = this.pos.get_order().selected_paymentline;
+            console.log(line);
             var auto = line.get_automatic_cashdrawer();
             if (auto) {
                 this.pos.proxy.automatic_cashdrawer_transaction_start(this);
