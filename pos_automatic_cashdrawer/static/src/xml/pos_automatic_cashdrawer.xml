@@ -28,7 +28,11 @@
 
     <t t-extend="PaymentScreenWidget" >
         <t t-jquery=".payment-buttons" t-operation="append">
-                <button class="automatic-cashdrawer-connection-init">Connect cashdrawer</button>
+                <t t-if="widget.is_manager()">
+                    <div class="button automatic-cashdrawer-connection-init">
+                        <i class="fa fa-wrench"></i> Connect cashdrawer
+                    </div>
+                </t>
                 <!-- <button class="automatic-cashdrawer-connection-exit">Disconnect cashdrawer</button> -->
                 <t t-if="widget.is_manager()">
                     <div class="button automatic-cashdrawer-display-backoffice">
