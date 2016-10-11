@@ -41,9 +41,10 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
     });
 
     devices.ProxyDevice.include({
-        automatic_cashdrawer_transaction_start: function(line_cid, screen){
+        automatic_cashdrawer_transaction_start: function(screen) {
             var line;
             var order = this.pos.get_order();
+            console.log(screen);
             if (order.selected_paymentline) {
                 var data = {
                         'amount': order.get_due(order.selected_paymentline),
@@ -73,15 +74,17 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
                                 var amount_expression = answer_info.match(amount_expression);
                                 var amount_in = amount_expression[0] / 100;
                                 var amount_out = amount_expression[1] / 100;
-                                // TODO : Check the amount_out and what is display on screen ?
-                                var amount_in = screen.format_currency_no_symbol(amount_in);
-                                order.selected_paymentline.set_amount(amount_in);
-                                screen.order_changes();
-                                screen.render_paymentlines();
-                                var amount_in_formatted = screen.format_currency_no_symbol(amount_in);
-                                screen.$('.paymentline.selected .edit').text(amount_in_formatted);
-                                screen.$('.delete-button').css('display', 'none');
-                                screen.$('.automatic-cashdrawer-transaction-start').css('display', 'none');
+                                if (!amount_in == 0) {
+                                    // TODO : Check the amount_out and what is display on screen ?
+                                    var amount_in = screen.format_currency_no_symbol(amount_in);
+                                    order.selected_paymentline.set_amount(amount_in);
+                                    screen.order_changes();
+                                    screen.render_paymentlines();
+                                    var amount_in_formatted = screen.format_currency_no_symbol(amount_in);
+                                    screen.$('.paymentline.selected .edit').text(amount_in_formatted);
+                                    screen.$('.delete-button').css('display', 'none');
+                                    screen.$('.automatic-cashdrawer-transaction-start').css('display', 'none');
+                                }
                             }
                         }
                     }
@@ -148,7 +151,7 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
                 var line = this.pos.get_order().selected_paymentline;
                 var auto = line.get_automatic_cashdrawer();
                 if (auto) {
-                    this.pos.proxy.automatic_cashdrawer_transaction_start($(this).data('cid'), this);
+                    this.pos.proxy.automatic_cashdrawer_transaction_start(this);
                 }
             },
 
