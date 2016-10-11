@@ -34,7 +34,10 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
         add_paymentline: function(cashregister) {
             this.assert_editable();
             var newPaymentline = new exports.Paymentline({},{order: this, cashregister:cashregister, pos: this.pos});
-            var auto = line.get_automatic_payment_terminal();
+            var auto = false;
+            if (cashregister.journal.payment_mode == 'card' && pos.config.iface_payment_terminal) {
+                auto = true;
+            }
             console.log(auto);
             if(cashregister.journal.type !== 'cash' || this.pos.config.iface_precompute_cash){
 //                if (!auto) {
