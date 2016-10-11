@@ -76,7 +76,6 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
                                 var amount_out = amount_expression[1] / 100;
                                 if (!amount_in == 0) {
                                     // TODO : Check the amount_out and what is display on screen ?
-                                    var amount_in = screen.format_currency_no_symbol(amount_in);
                                     order.selected_paymentline.set_amount(amount_in);
                                     screen.order_changes();
                                     screen.render_paymentlines();
