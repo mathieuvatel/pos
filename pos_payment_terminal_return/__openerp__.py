@@ -31,7 +31,6 @@
     'license': 'AGPL-3',
     'depends': ['point_of_sale'],
     'data': [
-             'pos_payment_terminal_view.xml',
              'static/src/xml/templates.xml',
              ],
     'demo': ['pos_payment_terminal_demo.xml'],
