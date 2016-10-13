@@ -302,7 +302,7 @@ class TeliumPaymentTerminalProxy(hw_proxy.Proxy):
         logger.debug(
             'Telium: Call payment_terminal_transaction_start with '
             'payment_info=%s', payment_info)
-        answer = driver.push_task('transaction_start', payment_info)
+        driver.push_task('transaction_start', payment_info)
 
     @http.route(
         '/hw_proxy/payment_terminal_transaction_start_with_return',

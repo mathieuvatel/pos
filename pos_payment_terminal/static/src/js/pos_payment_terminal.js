@@ -54,19 +54,17 @@ odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
             var line = order.selected_paymentline;
             var data = self.get_data_send(order, line, currency_iso);
             if (this.wait_terminal_answer()) {
-                console.log('hello, wait_terminal_answer')
                 this.message('payment_terminal_transaction_start_with_return', {'payment_info' : JSON.stringify(data)}).then(function (answer) {
-                    var answer_info = answer['info'];
-                    if (answer_info) {
-                        var transaction_result = answer_info['transaction_result'];
+                    if (answer) {
+                        var transaction_result = answer['transaction_result'];
                         if (transaction_result == '7') {
                             // This means that the operation was not finished
                             // TODO : check what to do here. But I think this should do nothing.
                             screen.transaction_error();
-                        } else if (transaction_result == "0") {
+                        } else if (transaction_result == '0') {
                             // This means that the operation was a success
                             // We get amount and set the amount in this line
-                            var amount_in = answer_info['amount_msg'] / 100;
+                            var amount_in = answer['amount_msg'] / 100;
                             if (!amount_in == 0) {
                                 line.set_amount(amount_in);
                                 screen.order_changes();
