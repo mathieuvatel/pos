@@ -1,5 +1,5 @@
-POS Payment Terminal
-====================
+POS Payment Terminal Return
+===========================
 
 This module adds support for credit card reader and checks printer
 in the Point of Sale.
@@ -34,7 +34,7 @@ of Sale > Configuration > Payment Methods*, under the *Point of Sale* tab.
 Usage
 =====
 
-In the frontend of the POS, when you select a payment method that has a payment mode *card* or *check*, you will have a *Start Transaction* button : if you click on that button, the amount, the currency and the payment mode will be sent to the POSbox.
+In the frontend of the POS, when you select a payment method that has a payment mode *card* or *check*, if the payment mode is *card* and the POS is linked to a payment card terminal, then the amount paid will be set to 0 waitting for the return of payment terminal.
 
 Credits
 =======
@@ -42,18 +42,4 @@ Credits
 Contributors
 ------------
 
-* Aurelien Dumaine
-* Alexis de Lattre <alexis.delattre@akretion.com>
-
-Maintainer
-----------
-
-.. image:: http://odoo-community.org/logo.png
-   :alt: Odoo Community Association
-   :target: http://odoo-community.org
-
-This module is maintained by the OCA.
-
-OCA, or the Odoo Community Association, is a nonprofit organization whose mission is to support the collaborative development of Odoo features and promote its widespread use.
-
-To contribute to this module, please visit http://odoo-community.org.
+* Mathieu Vatel <mathieu@julius.fr>
