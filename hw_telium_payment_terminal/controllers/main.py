@@ -133,6 +133,9 @@ class TeliumPaymentTerminalDriver(Thread):
         except:
             logger.error("Currency %s is not recognized" % cur_iso_letter)
             return False
+        wait_terminal_answer = payment_info_dict.get('wait_terminal_answer',
+                                                     False)
+        wait = wait_terminal_answer is True and '0' or '1'
         data = {
             'pos_number': str(1).zfill(2),
             'answer_flag': '0',
@@ -140,7 +143,7 @@ class TeliumPaymentTerminalDriver(Thread):
             'payment_mode': payment_mode,
             'currency_numeric': cur_numeric.zfill(3),
             'private': ' ' * 10,
-            'delay': 'A011',
+            'delay': 'A01%s' % wait,
             'auto': 'B010',
             'amount_msg': ('%.0f' % (amount * 100)).zfill(8),
         }
@@ -223,6 +226,7 @@ class TeliumPaymentTerminalDriver(Thread):
         payment_info_dict = simplejson.loads(payment_info)
         assert isinstance(payment_info_dict, dict), \
             'payment_info_dict should be a dict'
+        answer = {}
         try:
             logger.debug(
                 'Opening serial port %s for payment terminal with baudrate %d'
@@ -243,12 +247,28 @@ class TeliumPaymentTerminalDriver(Thread):
                     self.send_one_byte_signal('EOT')
 
                     logger.info("Now expecting answer from Terminal")
-                    if self.get_one_byte_answer('ENQ'):
-                        self.send_one_byte_signal('ACK')
-                        self.get_answer_from_terminal(data)
-                        self.send_one_byte_signal('ACK')
-                        if self.get_one_byte_answer('EOT'):
-                            logger.info("Answer received from Terminal")
+                    wait_terminal_answer = payment_info_dict.\
+                        get('wait_terminal_answer', False)
+                    if wait_terminal_answer:
+                        i = 0
+                        while i < 60:
+                            if self.get_one_byte_answer('ENQ'):
+                                self.send_one_byte_signal('ACK')
+                                answer = self.get_answer_from_terminal(data)
+                                self.send_one_byte_signal('ACK')
+                                if self.get_one_byte_answer('EOT'):
+                                    logger.info("Answer received from Terminal")
+                                break
+                            time.sleep(1)
+                            i += 1
+                    else:
+                        if self.get_one_byte_answer('ENQ'):
+                            self.send_one_byte_signal('ACK')
+                            answer = self.get_answer_from_terminal(data)
+                            self.send_one_byte_signal('ACK')
+                            if self.get_one_byte_answer('EOT'):
+                                logger.info("Answer received from Terminal")
+                    logger.warning(answer)
 
         except Exception, e:
             logger.error('Exception in serial connection: %s' % str(e))
@@ -256,6 +276,7 @@ class TeliumPaymentTerminalDriver(Thread):
             if self.serial:
                 logger.debug('Closing serial port for payment terminal')
                 self.serial.close()
+        return answer
 
     def run(self):
         while True:
@@ -281,4 +302,15 @@ class TeliumPaymentTerminalProxy(hw_proxy.Proxy):
         logger.debug(
             'Telium: Call payment_terminal_transaction_start with '
             'payment_info=%s', payment_info)
-        driver.push_task('transaction_start', payment_info)
+        answer = driver.push_task('transaction_start', payment_info)
+
+    @http.route(
+        '/hw_proxy/payment_terminal_transaction_start_with_return',
+        type='json', auth='none', cors='*')
+    def payment_terminal_transaction_start_with_return(self, payment_info):
+        logger.debug(
+            'Telium: Call payment_terminal_transaction_start with return '
+            'payment_info=%s', payment_info)
+        answer = driver.transaction_start(payment_info)
+        logger.warning(answer)
+        return answer
