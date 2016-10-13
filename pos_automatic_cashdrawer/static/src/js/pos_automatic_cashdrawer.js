@@ -5,7 +5,7 @@
     The licence is in the file __openerp__.py
 */
 
-odoo.define('pos_payment_terminal.pos_payment_terminal', function (require) {
+odoo.define('pos_automatic_cashdrawer.pos_automatic_cashdrawer', function (require) {
     "use strict";
     var screens = require('point_of_sale.screens');
     var devices = require('point_of_sale.devices');
