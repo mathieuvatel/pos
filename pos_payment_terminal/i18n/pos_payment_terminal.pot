@@ -36,6 +36,13 @@ msgid "Payment mode"
 msgstr ""
 
 #. module: pos_payment_terminal
+#. openerp-web
+#: code:addons/pos_payment_terminal/static/src/js/pos_payment_terminal.js:103
+#, python-format
+msgid "Please, try it again."
+msgstr "Veuillez réessayer s'il vous plait."
+
+#. module: pos_payment_terminal
 #: help:account.journal,payment_mode:0
 msgid "Select the payment mode sent to the payment terminal"
 msgstr ""
@@ -46,4 +53,11 @@ msgstr ""
 #, python-format
 msgid "Start transaction"
 msgstr ""
+
+#. module: pos_payment_terminal
+#. openerp-web
+#: code:addons/pos_payment_terminal/static/src/js/pos_payment_terminal.js:102
+#, python-format
+msgid "Transaction error"
+msgstr "Erreur de transaction"
 
